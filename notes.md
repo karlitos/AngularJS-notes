@@ -220,7 +220,71 @@ var directiveDefinitionObject = {
     ...directives often need access to a few parent scope properties. The object hash is used to set up two-way binding (using '=') or one-way binding (using '@') between the parent scope and the isolate scope. There is also '&' to bind to parent scope expressions. So, these all create local scope properties that are derived from the parent scope. Note that attributes are used to help set up the binding -- you can't just reference parent scope property names in the object hash, you have to use an attribute. E.g., this won't work if you want to bind to parent property `parentProp` in the isolated scope: `<div my-directive>` and `scope: { localProp: '@parentProp' }`. An attribute must be used to specify each parent property that the directive wants to bind to: `<div my-directive the-Parent-Prop=parentProp>` and `scope: { localProp: '@theParentProp' }`.
 
      ...use `attrs.$observe('attr_name', function(value) { ... })` in the linking function to get the interpolated value of isolate scope properties that use the '@' notation.  E.g., if we have this in the linking function -- `attrs.$observe('interpolated', function(value) { ... })` -- `value` would be set to 11.  (`scope.interpolatedProp` is undefined in the linking function.  In contrast, `scope.twowayBindingProp` is defined in the linking function, since it uses the '=' notation.)
+     * passing parameters to the expressions from the _parent scope_ has to be done with so called __parameter object__. It is a map of local variable names and values into the expression wrapper fn. For example, if the expression is `increment(amount)` then we can specify the __amount__ value by calling the _localFn_ as `localFn({amount: 22})`.
 
+  * __link__ - It is called for every __directive instance__! exactly once. This property is used only if the compile property is not defined. The link function is responsible for registering DOM listeners as well as updating the DOM. It is executed after the template has been cloned. It takes 3-4 parameters, depending on whether the __require__ property is set:
+    * __scope__ - The scope to be used by the directive
+    * __iElement__ - instance element - The element where the directive is to be used.
+    * __iAttrs__ - instance attributes - List of attributes declared on this element shared between all directive linking functions.
+    * __controller__ - the directive's required controller instance(s)
+  * __compile__ - It is called for every __directive__ (not instance)! exactly once. The compile function deals with transforming the template DOM. It takes the following arguments:
+    * __tElement__ - template element - The element where the directive has been declared.
+    * __tAttrs__ - template attributes - List of attributes declared on this element shared between all directive compile functions.
+  * __require__ - Require another directive and inject its controller as the fourth argument to the linking function.
+
+### Practical usage
+
+#### ng-bind ng-bind-template ng-href
+Instead of __expressions__ inside of DOM elements the __ng-bind__ directive in place of the element attribute can be used.
+
+``````html
+<h2>{{ book.title }}</h2>
+<h3>{{ book.subtitle }}</h3>
+
+
+<h2 ng-bind="book.title"></h2>
+<h3 ng-bind="book.subtitle"></h3>
+``````
+This bring several improvements:
+1. Prohibits showing expressions `{{ ... }}` on the page if they has not been evaluated yet (because of slow application/server)
+2. Using expressions leads to creation of a new DOM elements every time they are evaluated. __ng-bind__ just updates the text/value of the DOM element, which leads to performance improvement and reduces the memory consumption.
+
+__ng-bind-template__ allows combining of expressions and plaintext together in an single element. It allows also the usage of more expressions in one element.
+``````html
+<li ng-bind-template="Seiten: {{ book.numPages }}"></li>
+<li ng-bind-template="Autor: {{ book.author }} ISBN: {{ book.isbn }}"></li>
+``````
+The __ng-href__ directive maks creation opf links more easy, by setting the hyperlink first then, when the expression its hold is evaluated.
+``````html
+<a ng-bind="book.publisher.name" ng-href="{{ book.publisher.url }}"  target="_blank"</a>
+``````
+
+### Unit tests - Jasmine
+#### ngMock
+* The ngMock module provides support to inject and mock Angular services into unit tests. In addition, ngMock also extends various core ng services such that they can be inspected and controlled in a synchronous manner within test code.
+* The __module__ function registers a module configuration code. It collects the configuration information which will be used when the injector is created by inject.
+
+``````javascript
+// load the application module
+    beforeEach(module('myModule'));
+``````
+* The __inject__ function wraps a function into an injectable function. The inject() creates new instance of $injector per test, which is then used for resolving references.
+* To help with this, the injected parameters can, optionally, be enclosed with underscores. These are ignored by the injector when the reference name is resolved
+
+``````javascript
+// Defined out reference variable outside
+var myService;
+
+// Wrap the parameter in underscores
+beforeEach( inject( function(_myService_){
+  myService = _myService_;
+}));
+
+// Use myService in a series of tests.
+it('makes use of myService', function() {
+  myService.doStuff();
+});
+``````
 ## JS
 
 ###  Self-Invoking Functions
@@ -248,3 +312,42 @@ add(); // the counter is now 3
 * _add_ is assigned the return value of a self-invoking function
 * _add_ becomes a function =>  _return_ returns a function expression
 *  it can access the counter in the parent scope.
+
+### use strict
+"use strict" defines that JavaScript code should be executed in _strict mode_. It is not a statement, but a literal expression, ignored by earlier versions of JavaScript.
+
+The purpose of "use strict" is to indicate that the code should be executed in _strict mode_. With strict mode, you can not, for example, use undeclared variables.
+
+#### Not Allowed in Strict Mode
+* Using a variable or an object, without declaring it, is not allowed.
+``````JavaScript
+"use strict";
+x = 3.14;                // This will cause an error (x is not defined)
+x = {p1:10, p2:20};      // This will cause an error (x is not defined)
+``````
+* Deleting a variable (or object) or a function is not allowed.
+``````JavaScript
+"use strict";
+var x = 3.14;
+delete x;                // This will cause an error
+function x(p1, p2) {};
+delete x;                // This will cause an error
+``````
+* Duplicating a parameter name is not allowed.
+``````JavaScript
+"use strict";
+function x(p1, p1) {};   // This will cause an error
+``````
+* Octal numeric literals and escape characters are not allowed.
+``````JavaScript
+"use strict";
+var x = 010;             // This will cause an error
+var x = \010;            // This will cause an error
+``````
+* Writing to a read-only property is not allowed.
+* Writing to a get-only property is not allowed.
+* Deleting an undeletable property is not allowed.
+* The string "eval" cannot be used as a variable.
+* The string "arguments" cannot be used as a variable.
+* The with statement is not allowed.
+* eval() is not allowed to create variables in the scope from which it was called
