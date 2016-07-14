@@ -232,6 +232,45 @@ var directiveDefinitionObject = {
     * __tAttrs__ - template attributes - List of attributes declared on this element shared between all directive compile functions.
   * __require__ - Require another directive and inject its controller as the fourth argument to the linking function.
 
+#### Components
+* Component helper introduced in _Angular 1.5.0_ allowing more easier way of writing self-contained reusable elements as when using directives
+* Configuration overview:
+
+|Name|Description|Default|
+|----|-----------|-------|
+|bindings|Define DOM attribute binding to component properties.|{ }|
+|template|Template as string|‘ ‘ (Empty String)|
+|templateUrl|Template via URL|	undefined|
+|transclude|Access innerHTML|true|
+|controller|Define a constructor function|function(){ }|
+|controllerAs|An identifier name for a reference to the controller.|$ctrl|
+* The __Component helper__ is a wrapper for the __directive__ function and adds some sugar on top
+* Comparison
+``````javascript
+// AngularJS 1.4.x way to create a component
+  angular.module('X')
+      .directive('myComponent', function(){
+        return {
+          scope: {},
+          template: '<div>{{$ctrl.data.name}}</div>',
+          bindToController: {
+            data: '='
+          },
+          controller: function(){},
+          controllerAs: '$ctrl'
+        }
+      });      
+// AngularJS 1.5.x way to create a component
+  angular.module('X')
+    .component('myComponent',{
+      template:'<div>{{$ctrl.data.name}}</div>',
+      bindings: {
+        data: '='
+      }
+    });
+``````
+
+
 ### Practical usage
 
 #### ng-bind ng-bind-template ng-href
